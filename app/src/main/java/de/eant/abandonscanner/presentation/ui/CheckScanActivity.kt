@@ -1,37 +1,27 @@
-package com.example.abandonscanner
+package de.eant.abandonscanner.presentation.ui
 
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.example.abandonscanner.data.AppDatabase
+import de.eant.abandonscanner.R
+import de.eant.abandonscanner.presentation.viewmodel.CheckScanViewModel
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
-import kotlinx.coroutines.Dispatchers
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
+@AndroidEntryPoint
 class CheckScanActivity : AppCompatActivity() {
-    private lateinit var database: AppDatabase
+    private val viewModel: CheckScanViewModel by viewModels()
 
     private val barcodeLauncher = registerForActivityResult(ScanContract()) { result ->
         if (result.contents != null) {
             // 检查条形码是否已废弃
-            lifecycleScope.launch {
-                val qrCode = withContext(Dispatchers.IO) {
-                    database.qrCodeDao().getQRCodeByContent(result.contents.trim())
-                }
-                if (qrCode != null) {
-                    // 命中废弃条形码，弹红色Dialog
-                    showAbandonedBarcodeDialog(result.contents)
-                } else {
-                    // 未命中，继续扫码
-                    Toast.makeText(this@CheckScanActivity, "Dieser Barcode kann verwendet werden", Toast.LENGTH_SHORT).show()
-                    startZXingScan()
-                }
-            }
+            viewModel.checkBarcode(result.contents)
         } else {
             // 用户按返回键或扫码失败，直接返回主页面
             finish()
@@ -41,14 +31,32 @@ class CheckScanActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_check_scan)
-        database = AppDatabase.getDatabase(this)
         
         // 设置返回按钮点击事件
         findViewById<android.widget.Button>(R.id.btnBack).setOnClickListener {
             finish()
         }
         
+        observeViewModel()
         startZXingScan()
+    }
+
+    private fun observeViewModel() {
+        lifecycleScope.launch {
+            viewModel.checkResult.collect { result ->
+                result?.let {
+                    if (it.isAbandoned) {
+                        // 命中废弃条形码，弹红色Dialog
+                        showAbandonedBarcodeDialog(it.content)
+                    } else {
+                        // 未命中，继续扫码
+                        Toast.makeText(this@CheckScanActivity, it.message, Toast.LENGTH_SHORT).show()
+                        startZXingScan()
+                    }
+                    viewModel.clearCheckResult()
+                }
+            }
+        }
     }
 
     private fun showAbandonedBarcodeDialog(content: String) {

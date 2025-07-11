@@ -1,4 +1,4 @@
-package com.example.abandonscanner.data
+package de.eant.abandonscanner.data.local
 
 import android.content.Context
 import androidx.room.Database

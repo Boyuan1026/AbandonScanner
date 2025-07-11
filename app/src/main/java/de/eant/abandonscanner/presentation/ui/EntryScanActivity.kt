@@ -1,31 +1,25 @@
-package com.example.abandonscanner
+package de.eant.abandonscanner.presentation.ui
 
 import android.os.Bundle
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.example.abandonscanner.data.AppDatabase
-import com.example.abandonscanner.data.QRCode
+import de.eant.abandonscanner.R
+import de.eant.abandonscanner.presentation.viewmodel.EntryScanViewModel
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
-import kotlinx.coroutines.Dispatchers
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
+@AndroidEntryPoint
 class EntryScanActivity : AppCompatActivity() {
-    private lateinit var database: AppDatabase
+    private val viewModel: EntryScanViewModel by viewModels()
 
     private val barcodeLauncher = registerForActivityResult(ScanContract()) { result ->
         if (result.contents != null) {
             // 录入废弃条形码
-            lifecycleScope.launch {
-                withContext(Dispatchers.IO) {
-                    database.qrCodeDao().insert(QRCode(result.contents.trim()))
-                }
-                Toast.makeText(this@EntryScanActivity, "Entsorgter Barcode erfasst: ${result.contents}", Toast.LENGTH_LONG).show()
-                // 返回主页面
-                finish()
-            }
+            viewModel.addBarcode(result.contents)
         } else {
             Toast.makeText(this@EntryScanActivity, "Scan fehlgeschlagen, bitte versuchen Sie es erneut", Toast.LENGTH_SHORT).show()
         }
@@ -34,8 +28,22 @@ class EntryScanActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_entry_scan)
-        database = AppDatabase.getDatabase(this)
+        
+        observeViewModel()
         startZXingScan()
+    }
+
+    private fun observeViewModel() {
+        lifecycleScope.launch {
+            viewModel.scanResult.collect { result ->
+                result?.let {
+                    Toast.makeText(this@EntryScanActivity, it, Toast.LENGTH_LONG).show()
+                    viewModel.clearScanResult()
+                    // 返回主页面
+                    finish()
+                }
+            }
+        }
     }
 
     private fun startZXingScan() {

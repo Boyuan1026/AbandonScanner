@@ -1,11 +1,12 @@
-package com.example.abandonscanner
+package de.eant.abandonscanner.presentation.adapter
 
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.example.abandonscanner.data.QRCode
+import de.eant.abandonscanner.R
+import de.eant.abandonscanner.data.local.QRCode
 import java.text.SimpleDateFormat
 import java.util.*
 

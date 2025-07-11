@@ -1,0 +1,7 @@
+<resources>
+    <style name="ColoredButton" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@null</item>
+        <item name="android:backgroundTint">@null</item>
+        <item name="android:background">@null</item>
+    </style>
+</resources> 

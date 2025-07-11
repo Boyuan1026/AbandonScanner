@@ -1,4 +1,4 @@
-package com.example.abandonscanner.data
+package de.eant.abandonscanner.data.local
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
